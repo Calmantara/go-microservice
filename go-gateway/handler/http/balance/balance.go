@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/Calmantara/go-common/logger"
@@ -88,13 +89,21 @@ func (w *BalanceHdlImpl) GetBalanceDetail(ctx *gin.Context) {
 	var resp *pb.BalanceResponse
 	var err error
 
+	// routing based on api version
+	url := ctx.Request.URL.Path
+
+	method := w.balanceClient.GetClient().GetBalance
+	if strings.Contains(url, "v2") {
+		method = w.balanceClient.GetClient().GetBalanceByTtl
+	}
+
 	w.sugar.WithContext(ctx).Info("fetching go-wallet")
 	for i := 0; i < w.confWallet.MaxRetries; i++ {
 		ctxCln, cancel := context.WithTimeout(ctx, time.Second*time.Duration(w.confWallet.Timeout))
 		defer cancel()
 		// fetching
 		ctxCln = w.util.InsertCorrelationIdToGrpc(ctxCln)
-		resp, err = w.balanceClient.GetClient().GetBalance(ctxCln, &pb.Wallet{Id: int64(walletId)})
+		resp, err = method(ctxCln, &pb.Wallet{Id: int64(walletId)})
 		if err == nil {
 			// indicate does not error happen
 			break

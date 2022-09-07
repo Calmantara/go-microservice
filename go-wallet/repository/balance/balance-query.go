@@ -56,3 +56,12 @@ func (b *BalanceRepoImpl) GetWalletBalanceView() string {
 			order by bt.first_timestamp desc
 			limit 1;`
 }
+
+func (b *BalanceRepoImpl) GetSumWalletBalance() string {
+	return `select 
+				bt.wallet_id as wallet_id,
+				sum(bt.amount) as amount
+			from h_balances bt
+			where bt.wallet_id = ?
+			group by bt.wallet_id;`
+}

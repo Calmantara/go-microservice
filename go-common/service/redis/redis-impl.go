@@ -16,7 +16,7 @@ func (r RedisKey) String() string {
 }
 
 func (r RedisKey) Append(str any) RedisKey {
-	return RedisKey(fmt.Sprintf("%v%v", string(r), str))
+	return RedisKey(fmt.Sprintf("%v%v", r, str))
 }
 
 type RedisServiceImpl struct {
@@ -33,7 +33,7 @@ func (c *RedisServiceImpl) Get(ctx context.Context, key RedisKey, model interfac
 	client := c.redisConfig.GetClient()
 
 	//get from redis
-	val, err := client.Get(ctx, fmt.Sprintf("%v", key)).Result()
+	val, err := client.Get(ctx, key.String()).Result()
 	if err != nil {
 		return err
 	}

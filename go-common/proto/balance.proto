@@ -8,6 +8,7 @@ option go_package = "github.com/Calmantara/go-common/proto;pb";
 
 service BalanceService {
   rpc GetBalance(Wallet) returns (BalanceResponse) {}
+  rpc GetBalanceByTtl(Wallet) returns (BalanceResponse) {}
 }
 
 message Balance {

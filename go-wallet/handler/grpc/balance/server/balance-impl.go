@@ -90,3 +90,51 @@ func (w *BalanceServerImpl) GetBalance(ctx context.Context, wallet *pb.Wallet) (
 	}
 	return balanceResp, err
 }
+
+func (w *BalanceServerImpl) GetBalanceByTtl(ctx context.Context, wallet *pb.Wallet) (balanceResp *pb.BalanceResponse, err error) {
+	// init response
+	balanceResp = &pb.BalanceResponse{}
+	// set transaction
+	ctx = context.WithValue(ctx, transaction.TRANSACTION_KEY, w.readTrx.GormBeginTransaction(ctx))
+	w.sugar.WithContext(ctx).Info("%T-GetBalanceByTtl is invoked", w)
+	defer func() {
+		// close transaction
+		if errTx := w.readTrx.GormEndTransaction(ctx); errTx != nil {
+			w.sugar.WithContext(ctx).Errorf("error when process payload:%v and transaction:%v", err, errTx)
+		}
+		w.sugar.WithContext(ctx).Info("%T-GetBalanceByTtl executed", w)
+	}()
+	ctx = w.util.GetCorrelationIdFromGrpc(ctx)
+
+	// processing payload
+	balanceDetail := model.WalletBalance{WalletId: uint64(wallet.GetId())}
+	w.sugar.WithContext(ctx).Infof("processing service: %v", wallet.GetId())
+	if errMsg := w.balanceSvc.GetBalanceDetailByTtl(ctx, &balanceDetail); errMsg.Error != nil {
+		balanceResp = &pb.BalanceResponse{
+			BalanceDetail: &pb.Balance{},
+			ErrorMessage: &pb.ErrorMessage{
+				Error:     err.Error(),
+				ErrorType: cmodel.ERR_INTERNAL_TYPE.String()},
+		}
+		w.sugar.WithContext(ctx).Errorf("error when calling service:%v", errMsg.Error.Error())
+		return balanceResp, errMsg.Error
+	}
+
+	w.sugar.WithContext(ctx).Infof("transforming payload from entity to proto: %v", wallet.GetId())
+	balance := &pb.Balance{}
+	if err = w.util.ObjectMapper(&balanceDetail, balance); err != nil {
+		balanceResp = &pb.BalanceResponse{
+			BalanceDetail: &pb.Balance{},
+			ErrorMessage: &pb.ErrorMessage{
+				Error:     err.Error(),
+				ErrorType: cmodel.ERR_INTERNAL_TYPE.String()},
+		}
+		w.sugar.WithContext(ctx).Errorf("error when transforming input to entity:%v", err.Error())
+		return balanceResp, err
+	}
+	balanceResp = &pb.BalanceResponse{
+		BalanceDetail: balance,
+		ErrorMessage:  &pb.ErrorMessage{},
+	}
+	return balanceResp, err
+}

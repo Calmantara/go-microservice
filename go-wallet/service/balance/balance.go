@@ -13,6 +13,7 @@ import (
 
 type BalanceSvc interface {
 	GetBalanceDetail(ctx context.Context, balance *model.WalletBalance) (errModel cmodel.ErrorModel)
+	GetBalanceDetailByTtl(ctx context.Context, balance *model.WalletBalance) (errModel cmodel.ErrorModel)
 	InsertBalance(ctx context.Context, balance *entity.Balance) (errModel cmodel.ErrorModel)
 	// consumer
 	ConsumeKafkaPayload() goka.ProcessCallback

@@ -68,10 +68,6 @@ func (b *BalanceSvcImpl) InsertBalance(ctx context.Context, balance *entity.Bala
 	b.sugar.WithContext(ctx).Infof("%T-UpsertBalance is invoked", b)
 	defer b.sugar.WithContext(ctx).Infof("%T-UpsertBalance executed", b)
 
-	//delete redis cache
-	ctxBg := b.util.ContextBackground(ctx)
-	go b.redis.Delete(ctxBg, model.BALANCE_KEY.Append(balance.WalletId))
-
 	b.sugar.WithContext(ctx).Info("insert balance to database")
 	if err := b.balanceRepo.InsertBalance(ctx, balance); err != nil {
 		b.sugar.WithContext(ctx).Errorf("error getting balance in database:%v", err)
@@ -92,29 +88,64 @@ func (b *BalanceSvcImpl) InsertBalance(ctx context.Context, balance *entity.Bala
 	}
 
 	// set redis cache for thresholding
+	ctxBg := b.util.ContextBackground(ctx)
 	go func(blc *entity.Balance) {
 		var walletBalance model.WalletBalance
 		// get redis data first
 		b.sugar.WithContext(ctxBg).Infof("checking balance in redis:%v", model.BALANCE_KEY.Append(blc.WalletId))
 		if err := b.redis.Get(ctxBg, model.BALANCE_KEY.Append(blc.WalletId), &walletBalance); err != nil {
 			b.sugar.WithContext(ctxBg).Infof("redis is empty for:%v", model.BALANCE_KEY.Append(blc.WalletId))
-
 			// set redis key
 			walletBalance = model.WalletBalance{
 				WalletId:  blc.WalletId,
 				Amount:    blc.Amount,
 				LastTopUp: blc.CreatedAt,
 			}
-			b.redis.Set(ctxBg, model.BALANCE_KEY.Append(blc.WalletId), &walletBalance, time.Duration(b.conf.RedisTtl*int(time.Minute)))
+			if err = b.redis.Set(ctxBg, model.BALANCE_KEY.Append(blc.WalletId), &walletBalance, time.Duration(b.conf.RedisTtl*int(time.Minute))); err != nil {
+				b.sugar.WithContext(ctxBg).Errorf("error when set in redis:%v", err)
+			}
 			return
 		}
 		// if exist
 		timeTwoMinutes := walletBalance.LastTopUp.Add(time.Duration(b.conf.RedisTtl * int(time.Minute)))
+		timeNow := time.Now()
+
+		if timeNow.After(timeTwoMinutes) {
+			// no need to increase per window
+			return
+		}
 		walletBalance.Amount += blc.Amount
-		last := (walletBalance).LastTopUp
-		b.redis.Set(ctxBg, model.BALANCE_KEY.Append(blc.WalletId), &walletBalance, timeTwoMinutes.Sub(*last))
+		b.redis.Set(ctxBg, model.BALANCE_KEY.Append(blc.WalletId), &walletBalance, timeTwoMinutes.Sub(timeNow))
 	}(balance)
 
+	return errModel
+}
+
+func (b *BalanceSvcImpl) GetBalanceDetailByTtl(ctx context.Context, balance *model.WalletBalance) (errModel cmodel.ErrorModel) {
+	balanceChan := make(chan model.WalletBalance)
+	go func(walletId uint64) {
+		var walletBalance model.WalletBalance
+		if err := b.redis.Get(ctx, model.BALANCE_KEY.Append(walletId), &walletBalance); err != nil {
+			b.sugar.WithContext(ctx).Info("cache is empty")
+		}
+		balanceChan <- walletBalance
+	}(balance.WalletId)
+
+	// fetching from database aswell
+	if err := b.balanceRepo.ReadSumBalance(ctx, balance); err != nil {
+		b.sugar.WithContext(ctx).Errorf("error fetching balance:%v", err)
+		err = errors.New("error connection")
+		errModel = cmodel.ErrorModel{
+			Error:     err,
+			ErrorType: cmodel.ERR_INTERNAL_TYPE,
+		}
+		return errModel
+	}
+	// checking window value
+	blc := <-balanceChan
+	if blc.Amount > int64(b.conf.Threshold) {
+		balance.AboveThreshold = true
+	}
 	return errModel
 }
 
@@ -132,8 +163,6 @@ func (b *BalanceSvcImpl) ConsumeKafkaPayload() goka.ProcessCallback {
 			b.sugar.WithContext(ctxWithValue).Infof("payload already proceed with key:%v", ctx.Key())
 			return
 		}
-
-		// convert string
 
 		// transform to balance entity
 		var balance entity.Balance

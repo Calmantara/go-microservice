@@ -79,7 +79,7 @@ func BuildInRuntime() (serviceConf map[string]any, grpcServer grpcserver.GRPCSer
 	}
 	if err = c.Invoke(func(config config.ConfigSetup, grpc grpcserver.GRPCServer,
 		walletServer walletserver.WalletServer, balanceServer balanceserver.BalanceServer,
-		kafkaConsumer consumer.Consumer) {
+		kafkaConsumer consumer.Consumer, blcSvc balancesvc.BalanceSvc) {
 		// start consumer
 		go kafkaConsumer.Consume()
 		// service information

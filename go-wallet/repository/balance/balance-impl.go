@@ -38,13 +38,25 @@ func (b *BalanceRepoImpl) ReadBalance(ctx context.Context, walletBalance *model.
 	b.sugar.WithContext(ctx).Infof("%T-ReadBalance is invoked", b)
 	// generate transaction
 	txn := b.readCln.GenerateTransaction(ctx)
-	// abc := map[string]any{}
 	txn.Raw(b.GetWalletBalanceView(), time.Now(), walletBalance.WalletId).
-		Scan(&walletBalance)
+		Scan(walletBalance)
 	if err = txn.Error; err != nil {
 		b.sugar.WithContext(ctx).Errorf("error execute ReadBalance:%v", err.Error())
 	}
 	b.sugar.WithContext(ctx).Infof("%T-ReadBalance executed", b)
+	return err
+}
+
+func (b *BalanceRepoImpl) ReadSumBalance(ctx context.Context, walletBalance *model.WalletBalance) (err error) {
+	b.sugar.WithContext(ctx).Infof("%T-ReadSumBalance is invoked", b)
+	// generate transaction
+	txn := b.readCln.GenerateTransaction(ctx)
+	txn.Raw(b.GetSumWalletBalance(), walletBalance.WalletId).
+		Scan(walletBalance)
+	if err = txn.Error; err != nil {
+		b.sugar.WithContext(ctx).Errorf("error execute ReadSumBalance:%v", err.Error())
+	}
+	b.sugar.WithContext(ctx).Infof("%T-ReadSumBalance executed", b)
 	return err
 }
 

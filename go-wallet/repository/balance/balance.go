@@ -12,6 +12,7 @@ import (
 type BalanceRepo interface {
 	// read
 	ReadBalance(ctx context.Context, walletBalance *model.WalletBalance) (err error)
+	ReadSumBalance(ctx context.Context, walletBalance *model.WalletBalance) (err error)
 	// write
 	InsertBalance(ctx context.Context, balance *entity.Balance) (err error)
 }

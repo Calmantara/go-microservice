@@ -9,5 +9,6 @@ import (
 )
 
 type BalanceServer interface {
-	GetBalance(ctx context.Context, balance *pb.Wallet) (balanceResp *pb.BalanceResponse, err error)
+	GetBalance(ctx context.Context, wallet *pb.Wallet) (balanceResp *pb.BalanceResponse, err error)
+	GetBalanceByTtl(ctx context.Context, wallet *pb.Wallet) (balanceResp *pb.BalanceResponse, err error)
 }

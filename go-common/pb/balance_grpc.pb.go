@@ -23,6 +23,7 @@ const _ = grpc.SupportPackageIsVersion7
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type BalanceServiceClient interface {
 	GetBalance(ctx context.Context, in *Wallet, opts ...grpc.CallOption) (*BalanceResponse, error)
+	GetBalanceByTtl(ctx context.Context, in *Wallet, opts ...grpc.CallOption) (*BalanceResponse, error)
 }
 
 type balanceServiceClient struct {
@@ -42,11 +43,21 @@ func (c *balanceServiceClient) GetBalance(ctx context.Context, in *Wallet, opts 
 	return out, nil
 }
 
+func (c *balanceServiceClient) GetBalanceByTtl(ctx context.Context, in *Wallet, opts ...grpc.CallOption) (*BalanceResponse, error) {
+	out := new(BalanceResponse)
+	err := c.cc.Invoke(ctx, "/pb.BalanceService/GetBalanceByTtl", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // BalanceServiceServer is the server API for BalanceService service.
 // All implementations must embed UnimplementedBalanceServiceServer
 // for forward compatibility
 type BalanceServiceServer interface {
 	GetBalance(context.Context, *Wallet) (*BalanceResponse, error)
+	GetBalanceByTtl(context.Context, *Wallet) (*BalanceResponse, error)
 	mustEmbedUnimplementedBalanceServiceServer()
 }
 
@@ -56,6 +67,9 @@ type UnimplementedBalanceServiceServer struct {
 
 func (UnimplementedBalanceServiceServer) GetBalance(context.Context, *Wallet) (*BalanceResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetBalance not implemented")
+}
+func (UnimplementedBalanceServiceServer) GetBalanceByTtl(context.Context, *Wallet) (*BalanceResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetBalanceByTtl not implemented")
 }
 func (UnimplementedBalanceServiceServer) mustEmbedUnimplementedBalanceServiceServer() {}
 
@@ -88,6 +102,24 @@ func _BalanceService_GetBalance_Handler(srv interface{}, ctx context.Context, de
 	return interceptor(ctx, in, info, handler)
 }
 
+func _BalanceService_GetBalanceByTtl_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(Wallet)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(BalanceServiceServer).GetBalanceByTtl(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/pb.BalanceService/GetBalanceByTtl",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(BalanceServiceServer).GetBalanceByTtl(ctx, req.(*Wallet))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // BalanceService_ServiceDesc is the grpc.ServiceDesc for BalanceService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -98,6 +130,10 @@ var BalanceService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetBalance",
 			Handler:    _BalanceService_GetBalance_Handler,
+		},
+		{
+			MethodName: "GetBalanceByTtl",
+			Handler:    _BalanceService_GetBalanceByTtl_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

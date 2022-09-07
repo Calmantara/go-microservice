@@ -10,12 +10,12 @@ import (
 	"github.com/Calmantara/go-gateway/router/v1/wallet"
 	"go.uber.org/dig"
 
+	ginrouter "github.com/Calmantara/go-common/infra/gin/router"
 	serviceassert "github.com/Calmantara/go-common/service/assert"
 	serviceutil "github.com/Calmantara/go-common/service/util"
 	balancehdl "github.com/Calmantara/go-gateway/handler/http/balance"
 	wallethdl "github.com/Calmantara/go-gateway/handler/http/wallet"
-
-	ginrouter "github.com/Calmantara/go-common/infra/gin/router"
+	balancev2 "github.com/Calmantara/go-gateway/router/v2/balance"
 )
 
 // initiate all grouped DI
@@ -30,7 +30,7 @@ func hdlDependencies() []any {
 }
 
 func routerDependencies() []any {
-	return []any{wallet.NewWalletRouter, balance.NewBalanceRouter}
+	return []any{wallet.NewWalletRouter, balance.NewBalanceRouter, balancev2.NewBalanceRouter}
 }
 
 func BuildInRuntime() (serviceConf map[string]any, ginRouter ginrouter.GinRouter, err error) {
@@ -48,7 +48,7 @@ func BuildInRuntime() (serviceConf map[string]any, ginRouter ginrouter.GinRouter
 		}
 	}
 	if err = c.Invoke(func(config config.ConfigSetup, http ginrouter.GinRouter,
-		walletR wallet.WalletRouter, balanceR balance.BalanceRouter) {
+		walletR wallet.WalletRouter, balanceR balance.BalanceRouter, balanceRv2 balancev2.BalanceRouter) {
 		// service information
 		app, _ := json.Marshal(config.GetRawConfig()["service"])
 		// init http server
@@ -58,6 +58,7 @@ func BuildInRuntime() (serviceConf map[string]any, ginRouter ginrouter.GinRouter
 		http.USE(cors.NewCorsMiddleware().Cors)
 		walletR.Routers()
 		balanceR.Routers()
+		balanceRv2.Routers()
 	}); err != nil {
 		panic(err)
 	}
