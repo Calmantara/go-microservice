@@ -1,0 +1,18 @@
+syntax = "proto3";
+package pb;
+import "common.proto";
+option go_package = "github.com/Calmantara/go-common/proto;pb";
+service EmitterService {
+  rpc SendEmitterPayload(Emitter) returns (EmitterResponse) {}
+}
+
+message Emitter {
+  string topic = 1;
+  string issuer = 2;
+  string message = 3;
+}
+
+message EmitterResponse {
+  Emitter emitter_detail = 1;
+  ErrorMessage error_message = 2;
+}

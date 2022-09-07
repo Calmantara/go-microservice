@@ -1,0 +1,89 @@
+version: "3.9"
+
+services:
+  # postgres setup
+  postgres:
+    build: ./pg
+    ports:
+      - "5432:5432"
+    restart: "always"
+    env_file:
+      - "app.env"
+    volumes:
+      - "./pg-data:/var/lib/postgresql/data"
+    deploy:
+      resources:
+        limits:
+          cpus: "0.50"
+          memory: "500M"
+    networks:
+      work-vnet:
+        ipv4_address: 10.0.0.5
+  # redis setup
+  redis:
+    image: redis:latest
+    command: redis-server --requirepass redisAdmin
+    restart: always
+    env_file:
+      - "app.env"
+    ports:
+      - "6379:6379"
+    deploy:
+      resources:
+        limits:
+          cpus: "0.50"
+          memory: "500M"
+    networks:
+      work-vnet:
+        ipv4_address: 10.0.0.2
+  # zookeeper
+  zookeeper1:
+    image: confluentinc/cp-zookeeper:7.0.1 
+    container_name: zookeeper1 
+    restart: always
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    networks:
+      work-vnet:
+        ipv4_address: 10.0.0.3
+  zookeeper2:
+    image: confluentinc/cp-zookeeper:7.0.1 
+    container_name: zookeeper2 
+    restart: always
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    networks:
+      work-vnet:
+        ipv4_address: 10.0.0.6
+  # kafka broker 
+  broker:
+    image: confluentinc/cp-kafka:7.0.1 
+    container_name: broker
+    restart: always
+    ports:
+      - "9092:9092"
+    depends_on:
+      - zookeeper1 
+      - zookeeper2 
+    environment:
+      KAFKA_BROKER_ID: 1 
+      KAFKA_ZOOKEEPER_CONNECT: "zookeeper1:2181,zookeeper2:2181"
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_INTERNAL:PLAINTEXT 
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092,PLAINTEXT_INTERNAL://broker:29092 
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+    networks:
+      work-vnet:
+        ipv4_address: 10.0.0.4
+
+
+networks:
+  work-vnet:
+    name: local-vnet
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 10.0.0.0/16

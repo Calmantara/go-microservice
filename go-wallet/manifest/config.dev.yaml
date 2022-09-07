@@ -1,0 +1,52 @@
+service:
+  name: 'go-wallet'
+  grpcPort: 50050
+postgresRead:
+  host: '127.0.0.1'
+  port: 5432
+  database: 'go-wallet'
+  username: 'postgres'
+  password: 'postgresAdmin'
+  timeZone: 'GMT'
+  autoMigrate: true
+  mode: 'read'
+  enableLog: false
+  maxConnection: 10
+  # amount
+  maxIdleConnection: 1
+  # in minute
+  maxIdleConnectionTtl: 5 
+postgresWrite:
+  host: '127.0.0.1'
+  port: 5432
+  database: 'go-wallet'
+  username: 'postgres'
+  password: 'postgresAdmin'
+  timeZone: 'GMT'
+  autoMigrate: false
+  mode: 'write'
+  enableLog: false
+  maxConnection: 10
+  # amount
+  maxIdleConnection: 1
+  # in minute
+  maxIdleConnectionTtl: 5 
+redis:
+  host: '127.0.0.1'
+  port: 6379
+  password: 'redisAdmin'
+  db: 1
+balanceConf:
+  # in minutes
+  redisTtl: 2
+  threshold: 10000
+walletConf:
+  # in minutes
+  redisTtl: 10
+# kafka consumer workers
+kafka:
+  brokers: 
+    - 'localhost:9092'
+balanceTransaction:
+  group: balance-transaction-group
+  topic: balance-transaction

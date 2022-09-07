@@ -1,0 +1,8 @@
+go 1.19
+
+use (
+	./go-common
+	./go-emitter
+	./go-gateway
+	./go-wallet
+)

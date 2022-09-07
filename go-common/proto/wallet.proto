@@ -1,0 +1,17 @@
+syntax = "proto3";
+package pb;
+import "common.proto";
+option go_package = "github.com/Calmantara/go-common/proto;pb";
+service WalletService {
+  rpc GetWallet(Wallet) returns (WalletResponse) {}
+}
+
+message Wallet {
+  int64 id = 1;
+  string record_flag = 2;
+}
+
+message WalletResponse {
+  Wallet wallet_detail = 1;
+  ErrorMessage error_message = 2;
+}

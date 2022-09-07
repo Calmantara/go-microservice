@@ -1,0 +1,22 @@
+syntax = "proto3";
+package pb;
+
+import "common.proto";
+import "wallet.proto";
+
+option go_package = "github.com/Calmantara/go-common/proto;pb";
+
+service BalanceService {
+  rpc GetBalance(Wallet) returns (BalanceResponse) {}
+}
+
+message Balance {
+  int64 wallet_id = 1;
+  int64 amount = 2;
+  bool above_threshold = 3;
+}
+
+message BalanceResponse {
+  Balance balance_detail = 1;
+  ErrorMessage error_message = 2;
+}
