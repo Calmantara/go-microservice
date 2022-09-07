@@ -1,2 +1,3 @@
 .vscode
 docker-infra/pg-data/*
+main-app

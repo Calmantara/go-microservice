@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"os"
 	"sync"
 	"time"
 )
@@ -20,7 +21,9 @@ func main() {
 		grpc.SERVE()
 		wg.Done()
 	}()
-	fmt.Printf("runtime:%v\napplication-name:%s\napplication-port:%v",
-		time.Now().Format(time.RFC850), conf["name"], conf["grpcport"])
+	fmt.Printf(`-------------------------------------\n
+	runtime:%v\napplication-name:%s\napplication-port:%v\napplication-env:%v\n
+	--------------------------------------------------`,
+		time.Now().Format(time.RFC850), conf["name"], conf["grpcport"], os.Getenv("ENV"))
 	wg.Wait()
 }

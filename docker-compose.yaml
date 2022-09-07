@@ -1,0 +1,55 @@
+version: "3.9"
+
+services:
+  go-wallet:
+    build: ./go-wallet
+    container_name: go-wallet
+    ports:
+      - "50050:50050"
+    environment:
+      - ENV=PROD
+    deploy:
+      resources:
+        limits:
+          cpus: "0.50"
+          memory: "500M"
+    networks:
+      work-vnet:
+        ipv4_address: 10.0.0.10
+  go-emitter:
+    build: ./go-emitter
+    container_name: go-emitter
+    ports:
+      - "50051:50051"
+    environment:
+      - ENV=PROD
+    deploy:
+      resources:
+        limits:
+          cpus: "0.50"
+          memory: "500M"
+    networks:
+      work-vnet:
+        ipv4_address: 10.0.0.11
+  go-gateway:
+    build: ./go-gateway
+    container_name: go-gateway
+    ports:
+      - "8080:8080"
+    environment:
+      - ENV=PROD
+    deploy:
+      resources:
+        limits:
+          cpus: "0.50"
+          memory: "500M"
+    networks:
+      work-vnet:
+        ipv4_address: 10.0.0.12
+networks:
+  work-vnet:
+    name: local-vnet
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 10.0.0.0/16

@@ -1,0 +1,36 @@
+service:
+  name: 'go-emitter'
+  grpcPort: 50051
+postgresRead:
+  host: '10.0.0.5'
+  port: 5432
+  database: 'go-emitter'
+  username: 'postgres'
+  password: 'postgresAdmin'
+  timeZone: 'GMT'
+  autoMigrate: true
+  mode: 'read'
+  enableLog: false
+  maxConnection: 10
+  # amount
+  maxIdleConnection: 1
+  # in minute
+  maxIdleConnectionTtl: 5 
+postgresWrite:
+  host: '10.0.0.5'
+  port: 5432
+  database: 'go-emitter'
+  username: 'postgres'
+  password: 'postgresAdmin'
+  timeZone: 'GMT'
+  autoMigrate: false
+  mode: 'write'
+  enableLog: false
+  maxConnection: 10
+  # amount
+  maxIdleConnection: 1
+  # in minute
+  maxIdleConnectionTtl: 5 
+kafka:
+  brokers: 
+    - '10.0.0.4:29092'

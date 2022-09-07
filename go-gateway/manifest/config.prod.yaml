@@ -1,0 +1,15 @@
+service:
+  name: go-gateway
+  httpPort: 8080
+goWallet:
+  host: "go-wallet:50050"
+  # in second
+  timeout: 10
+  timeToWait: 10
+  maxRetries: 3
+goEmitter:
+  host: "go-emitter:50051"
+  # in second
+  timeout: 10
+  timeToWait: 10
+  maxRetries: 3
