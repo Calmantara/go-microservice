@@ -78,11 +78,11 @@ func (w *EmitterServerImpl) SendEmitterPayload(ctx context.Context, emitter *pb.
 		emitterResp = &pb.EmitterResponse{
 			EmitterDetail: &pb.Emitter{},
 			ErrorMessage: &pb.ErrorMessage{
-				Error:     err.Error(),
-				ErrorType: model.ERR_INTERNAL_TYPE.String()},
+				Error:     errMsg.Error.Error(),
+				ErrorType: errMsg.ErrorType.String()},
 		}
 		w.sugar.WithContext(ctx).Errorf("error when calling service:%v", errMsg.Error.Error())
-		return emitterResp, errMsg.Error
+		return emitterResp, err
 	}
 
 	w.sugar.WithContext(ctx).Infof("transforming payload from entity to proto from: %v with topic:%v", emitter.GetIssuer(), emitter.GetTopic())

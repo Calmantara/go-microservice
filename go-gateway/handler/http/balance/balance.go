@@ -15,15 +15,16 @@ import (
 	"golang.org/x/net/context"
 
 	"github.com/Calmantara/go-common/pb"
-	pbe "github.com/Calmantara/go-common/pb"
 	"github.com/Calmantara/go-wallet/entity"
 
 	grpcclient "github.com/Calmantara/go-common/infra/grpc/client"
 	cmodel "github.com/Calmantara/go-common/model"
+	pbe "github.com/Calmantara/go-common/pb"
 	serviceassert "github.com/Calmantara/go-common/service/assert"
 	serviceutil "github.com/Calmantara/go-common/service/util"
 	emitterclient "github.com/Calmantara/go-emitter/handler/grpc/emitter/client"
 	balanceclient "github.com/Calmantara/go-wallet/handler/grpc/balance/client"
+	walletclient "github.com/Calmantara/go-wallet/handler/grpc/wallet/client"
 	wmodel "github.com/Calmantara/go-wallet/model"
 )
 
@@ -41,6 +42,7 @@ type BalanceHdlImpl struct {
 	confService   model.Service
 	balanceClient balanceclient.BalanceClient
 	emitterCln    emitterclient.EmitterClient
+	walletCln     walletclient.WalletClient
 }
 
 func NewBalanceHdl(sugar logger.CustomLogger, config config.ConfigSetup,
@@ -55,15 +57,17 @@ func NewBalanceHdl(sugar logger.CustomLogger, config config.ConfigSetup,
 	config.GetConfig("service", &confService)
 
 	// init client
-	grpcWalletCln := grpcclient.NewGRPCClientConnection(sugar, confWallet.Host)
+	grpcBalanceCln := grpcclient.NewGRPCClientConnection(sugar, confWallet.Host)
 	grpcEmitterCln := grpcclient.NewGRPCClientConnection(sugar, confEmitter.Host)
+	grpcWalletCln := grpcclient.NewGRPCClientConnection(logger.NewCustomLogger(), confWallet.Host)
 	// get clients
-	balanceCln := balanceclient.NewBalanceClient(sugar, grpcWalletCln)
+	walletCln := walletclient.NewWalletClient(sugar, grpcWalletCln)
+	balanceCln := balanceclient.NewBalanceClient(sugar, grpcBalanceCln)
 	emitterCln := emitterclient.NewEmitterClient(sugar, grpcEmitterCln)
 
 	return &BalanceHdlImpl{sugar: sugar,
 		confWallet: confWallet, confService: confService, confEmitter: confEmitter,
-		util: util, assert: assert,
+		util: util, assert: assert, walletCln: walletCln,
 		balanceClient: balanceCln, emitterCln: emitterCln}
 }
 
@@ -89,9 +93,11 @@ func (w *BalanceHdlImpl) GetBalanceDetail(ctx *gin.Context) {
 	var resp *pb.BalanceResponse
 	var err error
 
+	// check wallet first
+	errMsg := w.checkWallet(ctx, int64(walletId))
+
 	// routing based on api version
 	url := ctx.Request.URL.Path
-
 	method := w.balanceClient.GetClient().GetBalance
 	if strings.Contains(url, "v2") {
 		method = w.balanceClient.GetClient().GetBalanceByTtl
@@ -120,7 +126,7 @@ func (w *BalanceHdlImpl) GetBalanceDetail(ctx *gin.Context) {
 	}
 
 	// transform error message and check
-	errMsg := cmodel.ErrorModel{
+	errMsg = cmodel.ErrorModel{
 		Error:     errors.New(resp.GetErrorMessage().Error),
 		ErrorType: cmodel.ResponseType(resp.ErrorMessage.GetErrorType()),
 	}
@@ -160,6 +166,19 @@ func (w *BalanceHdlImpl) PostBalance(ctx *gin.Context) {
 		return
 	}
 
+	// init retries and timeout
+	var resp *pbe.EmitterResponse
+	var err error
+
+	// check wallet first
+	errMsg := w.checkWallet(ctx, int64(balancePayload.WalletId))
+	// transform error message and check
+	if !w.assert.IsEmpty(errMsg.Error.Error()) || !w.assert.IsEmpty(errMsg.ErrorType.String()) {
+		w.sugar.WithContext(ctx).Error("error fetching processing payload to go-wallet:%v", errMsg.Error.Error())
+		w.util.UtilErrorResponseSwitcher(ctx, errMsg.ErrorType, errMsg.Error.Error())
+		return
+	}
+
 	// transform balance payload to string
 	b, _ := json.Marshal(&balancePayload)
 	balancePayloadStr := string(b)
@@ -170,10 +189,6 @@ func (w *BalanceHdlImpl) PostBalance(ctx *gin.Context) {
 		Issuer:  w.confService.Name,
 		Message: balancePayloadStr,
 	}
-
-	// init retries and timeout
-	var resp *pbe.EmitterResponse
-	var err error
 
 	w.sugar.WithContext(ctx).Info("fetching go-emitter")
 	for i := 0; i < w.confEmitter.MaxRetries; i++ {
@@ -198,7 +213,7 @@ func (w *BalanceHdlImpl) PostBalance(ctx *gin.Context) {
 	}
 
 	// transform error message and check
-	errMsg := cmodel.ErrorModel{
+	errMsg = cmodel.ErrorModel{
 		Error:     errors.New(resp.GetErrorMessage().Error),
 		ErrorType: cmodel.ResponseType(resp.ErrorMessage.GetErrorType()),
 	}
@@ -218,4 +233,40 @@ func (w *BalanceHdlImpl) PostBalance(ctx *gin.Context) {
 	w.util.UtilResponseSwitcher(ctx, cmodel.SUCCESS_OK_TYPE, map[string]any{
 		"message": "balance transaction succes",
 		"payload": balance})
+}
+
+func (w *BalanceHdlImpl) checkWallet(ctx context.Context, walletId int64) (errMsg cmodel.ErrorModel) {
+	// check walet id from wallet service
+	w.sugar.WithContext(ctx).Info("fetching go-wallet to check wallet id")
+	// init variables needed
+	var err error
+	var walletResp *pbe.WalletResponse
+
+	for i := 0; i < w.confEmitter.MaxRetries; i++ {
+		ctxCln, cancel := context.WithTimeout(ctx, time.Minute*time.Duration(w.confEmitter.Timeout))
+		defer cancel()
+		// fetching
+		ctxCln = w.util.InsertCorrelationIdToGrpc(ctxCln)
+		walletResp, err = w.walletCln.GetClient().GetWallet(ctxCln, &pb.Wallet{Id: walletId})
+		if err == nil {
+			// indicate does not error happen
+			break
+		}
+		w.sugar.WithContext(ctx).Infof("failed to fetch go-emitter, retries num:%v with err:%v", i, err.Error())
+		// wait every 10 seconds
+		time.Sleep(time.Second * time.Duration(w.confEmitter.TimeToWait))
+	}
+	// checking response
+	if err != nil {
+		w.sugar.WithContext(ctx).Error("error fetching to go-wallet:%v", err.Error())
+		return cmodel.ErrorModel{
+			Error:     errors.New("something went wrong"),
+			ErrorType: cmodel.ERR_INTERNAL_TYPE,
+		}
+	}
+	errMsg = cmodel.ErrorModel{
+		Error:     errors.New(walletResp.GetErrorMessage().Error),
+		ErrorType: cmodel.ResponseType(walletResp.ErrorMessage.GetErrorType()),
+	}
+	return errMsg
 }

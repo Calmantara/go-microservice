@@ -59,7 +59,7 @@ func (w *WalletSvcImpl) GetWalletDetail(ctx context.Context, wallet *entity.Wall
 		}
 	}
 	// checking wallet
-	if wallet.CreatedAt.IsZero() {
+	if wallet.CreatedAt == nil {
 		err := errors.New("wallet is not created")
 		errModel = cmodel.ErrorModel{
 			Error:     err,
@@ -95,7 +95,7 @@ func (w *WalletSvcImpl) UpsertWallet(ctx context.Context, wallet *entity.Wallet)
 		return errModel
 	}
 	// checking wallet
-	if wallet.CreatedAt.IsZero() {
+	if wallet.CreatedAt == nil {
 		err := errors.New("wallet is not inserted")
 		errModel = cmodel.ErrorModel{
 			Error:     err,

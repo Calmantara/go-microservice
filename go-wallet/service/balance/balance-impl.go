@@ -78,7 +78,7 @@ func (b *BalanceSvcImpl) InsertBalance(ctx context.Context, balance *entity.Bala
 		return errModel
 	}
 	// checking balance
-	if balance.CreatedAt.IsZero() {
+	if balance.CreatedAt == nil {
 		err := errors.New("balance is not inserted")
 		errModel = cmodel.ErrorModel{
 			Error:     err,
@@ -122,6 +122,12 @@ func (b *BalanceSvcImpl) InsertBalance(ctx context.Context, balance *entity.Bala
 }
 
 func (b *BalanceSvcImpl) GetBalanceDetailByTtl(ctx context.Context, balance *model.WalletBalance) (errModel cmodel.ErrorModel) {
+	// checking wallet exist or not
+	wallet := entity.Wallet{Id: balance.WalletId}
+	if errModel = b.walletSvc.GetWalletDetail(ctx, &wallet); errModel.Error != nil {
+		return errModel
+	}
+
 	balanceChan := make(chan model.WalletBalance)
 	go func(walletId uint64) {
 		var walletBalance model.WalletBalance

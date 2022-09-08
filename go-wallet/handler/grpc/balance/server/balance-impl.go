@@ -65,11 +65,11 @@ func (w *BalanceServerImpl) GetBalance(ctx context.Context, wallet *pb.Wallet) (
 		balanceResp = &pb.BalanceResponse{
 			BalanceDetail: &pb.Balance{},
 			ErrorMessage: &pb.ErrorMessage{
-				Error:     err.Error(),
-				ErrorType: cmodel.ERR_INTERNAL_TYPE.String()},
+				Error:     errMsg.Error.Error(),
+				ErrorType: errMsg.ErrorType.String()},
 		}
 		w.sugar.WithContext(ctx).Errorf("error when calling service:%v", errMsg.Error.Error())
-		return balanceResp, errMsg.Error
+		return balanceResp, err
 	}
 
 	w.sugar.WithContext(ctx).Infof("transforming payload from entity to proto: %v", wallet.GetId())
@@ -113,11 +113,11 @@ func (w *BalanceServerImpl) GetBalanceByTtl(ctx context.Context, wallet *pb.Wall
 		balanceResp = &pb.BalanceResponse{
 			BalanceDetail: &pb.Balance{},
 			ErrorMessage: &pb.ErrorMessage{
-				Error:     err.Error(),
-				ErrorType: cmodel.ERR_INTERNAL_TYPE.String()},
+				Error:     errMsg.Error.Error(),
+				ErrorType: errMsg.ErrorType.String()},
 		}
 		w.sugar.WithContext(ctx).Errorf("error when calling service:%v", errMsg.Error.Error())
-		return balanceResp, errMsg.Error
+		return balanceResp, err
 	}
 
 	w.sugar.WithContext(ctx).Infof("transforming payload from entity to proto: %v", wallet.GetId())

@@ -78,11 +78,11 @@ func (w *WalletServerImpl) GetWallet(ctx context.Context, wallet *pb.Wallet) (wa
 		walletResp = &pb.WalletResponse{
 			WalletDetail: &pb.Wallet{},
 			ErrorMessage: &pb.ErrorMessage{
-				Error:     err.Error(),
-				ErrorType: model.ERR_INTERNAL_TYPE.String()},
+				Error:     errMsg.Error.Error(),
+				ErrorType: errMsg.ErrorType.String()},
 		}
 		w.sugar.WithContext(ctx).Errorf("error when calling service:%v", errMsg.Error.Error())
-		return walletResp, errMsg.Error
+		return walletResp, err
 	}
 
 	w.sugar.WithContext(ctx).Infof("transforming payload from entity to proto: %v", wallet.GetId())

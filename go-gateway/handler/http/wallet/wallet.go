@@ -11,12 +11,13 @@ import (
 	"github.com/gin-gonic/gin"
 	"golang.org/x/net/context"
 
+	"github.com/Calmantara/go-common/pb"
+	"github.com/Calmantara/go-wallet/entity"
+
 	grpcclient "github.com/Calmantara/go-common/infra/grpc/client"
 	cmodel "github.com/Calmantara/go-common/model"
-	"github.com/Calmantara/go-common/pb"
 	serviceassert "github.com/Calmantara/go-common/service/assert"
 	serviceutil "github.com/Calmantara/go-common/service/util"
-	"github.com/Calmantara/go-wallet/entity"
 	walletclient "github.com/Calmantara/go-wallet/handler/grpc/wallet/client"
 )
 
@@ -41,9 +42,9 @@ func NewWalletHdl(sugar logger.CustomLogger, config config.ConfigSetup,
 	config.GetConfig("gowallet", &conf)
 
 	// init client
-	grpcCln := grpcclient.NewGRPCClientConnection(logger.NewCustomLogger(), conf.Host)
+	grpcCln := grpcclient.NewGRPCClientConnection(sugar, conf.Host)
 	// get wallet client
-	walletCln := walletclient.NewWalletClient(logger.NewCustomLogger(), grpcCln)
+	walletCln := walletclient.NewWalletClient(sugar, grpcCln)
 
 	return &WalletHdlImpl{sugar: sugar, config: conf, util: util, assert: assert, walletClient: walletCln}
 }
@@ -72,7 +73,7 @@ func (w *WalletHdlImpl) GetWalletDetail(ctx *gin.Context) {
 
 	w.sugar.WithContext(ctx).Info("fetching go-wallet")
 	for i := 0; i < w.config.MaxRetries; i++ {
-		ctxCln, cancel := context.WithTimeout(ctx, time.Second*time.Duration(w.config.Timeout))
+		ctxCln, cancel := context.WithTimeout(ctx, time.Minute*time.Duration(w.config.Timeout))
 		defer cancel()
 		// fetching
 		ctxCln = w.util.InsertCorrelationIdToGrpc(ctxCln)

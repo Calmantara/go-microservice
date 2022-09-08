@@ -2,12 +2,15 @@ package main
 
 import (
 	"encoding/json"
+	"net/http"
+	"time"
 
 	"github.com/Calmantara/go-common/logger"
 	"github.com/Calmantara/go-common/middleware/cors"
 	"github.com/Calmantara/go-common/setup/config"
 	"github.com/Calmantara/go-gateway/router/v1/balance"
 	"github.com/Calmantara/go-gateway/router/v1/wallet"
+	"github.com/gin-gonic/gin"
 	"go.uber.org/dig"
 
 	ginrouter "github.com/Calmantara/go-common/infra/gin/router"
@@ -47,15 +50,24 @@ func BuildInRuntime() (serviceConf map[string]any, ginRouter ginrouter.GinRouter
 			return nil, nil, err
 		}
 	}
-	if err = c.Invoke(func(config config.ConfigSetup, http ginrouter.GinRouter,
+	if err = c.Invoke(func(config config.ConfigSetup, gn ginrouter.GinRouter,
 		walletR wallet.WalletRouter, balanceR balance.BalanceRouter, balanceRv2 balancev2.BalanceRouter) {
 		// service information
 		app, _ := json.Marshal(config.GetRawConfig()["service"])
 		// init http server
 		json.Unmarshal(app, &serviceConf)
-		ginRouter = http
+		ginRouter = gn
 		// init cors
-		http.USE(cors.NewCorsMiddleware().Cors)
+		gn.USE(cors.NewCorsMiddleware().Cors)
+
+		// health check
+		timeNow := time.Now()
+		gn.GET("/health", func(ctx *gin.Context) {
+			ctx.JSON(http.StatusOK, map[string]any{
+				"meta":    serviceConf,
+				"runtime": timeNow})
+		})
+
 		walletR.Routers()
 		balanceR.Routers()
 		balanceRv2.Routers()
