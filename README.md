@@ -28,15 +28,14 @@ This service should has requirement:
 
 ## How to Run
 this project is running on docker compose (can be v1 or v2)
-1. run
+1. to up the infrastructure services, run command below:
 ```
 make infra
 ```
-to up the infrastructure services:
-    - postgres
-    - redis
-    - zookeeper (2)
-    - kafka broker
+    1. postgres
+    2. redis
+    3. zookeeper (2)
+    4. kafka broker
 2. make sure kafka broker up and running
 3. because kafka's topic is not automatically created, we should create it manually by run command below
 ```
