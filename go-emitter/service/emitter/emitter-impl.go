@@ -52,7 +52,7 @@ func (e *EmitterSvcImpl) ProcessEmitterPayload(ctx context.Context, emitterPaylo
 	// send to kafka
 	ctxBg := e.util.ContextBackground(ctx)
 	go func(payload entity.EmitterPayload) {
-		if err := e.producer.Publish(ctxBg, payload.Topic, payload.Message); err != nil {
+		if err := e.producer.Publish(ctxBg, payload.Topic, payload); err != nil {
 			e.sugar.WithContext(ctx).Errorf("error when emitting:%v", err.Error())
 			//  update failed status
 			payload.Attempt += 1

@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/Calmantara/go-common/logger"
+	"github.com/Calmantara/go-common/pb"
 	"github.com/Calmantara/go-common/setup/config"
 	"github.com/Calmantara/go-wallet/entity"
 	"github.com/Calmantara/go-wallet/model"
@@ -171,8 +172,11 @@ func (b *BalanceSvcImpl) ConsumeKafkaPayload() goka.ProcessCallback {
 		}
 
 		// transform to balance entity
+		emitterPayload := &pb.Emitter{}
+		json.Unmarshal([]byte(msg.(string)), &emitterPayload)
+		// transform to balance
 		var balance entity.Balance
-		json.Unmarshal([]byte(msg.(string)), &balance)
+		json.Unmarshal([]byte(emitterPayload.GetMessage()), &balance)
 		b.sugar.WithContext(ctxWithValue).Info("inserting payload for wallet:%v", balance.WalletId)
 		if errMsg := b.InsertBalance(ctxWithValue, &balance); errMsg.Error != nil {
 			b.sugar.WithContext(ctxWithValue).Errorf("error when inserting:%v", errMsg.Error)
