@@ -13,9 +13,9 @@ services:
         limits:
           cpus: "0.50"
           memory: "500M"
-    networks:
-      work-vnet:
-        ipv4_address: 10.0.0.10
+    # networks:
+    #   work-vnet:
+    #     ipv4_address: 100.1.0.10
   go-emitter:
     build: ./go-emitter
     container_name: go-emitter
@@ -28,9 +28,9 @@ services:
         limits:
           cpus: "0.50"
           memory: "500M"
-    networks:
-      work-vnet:
-        ipv4_address: 10.0.0.11
+    # networks:
+    #   work-vnet:
+    #     ipv4_address: 100.1.0.11
   go-gateway:
     build: ./go-gateway
     container_name: go-gateway
@@ -43,13 +43,10 @@ services:
         limits:
           cpus: "0.50"
           memory: "500M"
-    networks:
-      work-vnet:
-        ipv4_address: 10.0.0.12
+    # networks:
+    #   work-vnet:
+    #     ipv4_address: 100.1.0.12
 networks:
-  work-vnet:
-    name: local-vnet
-    driver: bridge
-    ipam:
-      config:
-        - subnet: 10.0.0.0/16
+  default:
+    external:
+      name: "infra-vnet"

@@ -2,7 +2,7 @@ service:
   name: 'go-emitter'
   grpcPort: 50051
 postgresRead:
-  host: '10.0.0.5'
+  host: 'postgres'
   port: 5432
   database: 'go-emitter'
   username: 'postgres'
@@ -17,7 +17,7 @@ postgresRead:
   # in minute
   maxIdleConnectionTtl: 5 
 postgresWrite:
-  host: '10.0.0.5'
+  host: 'postgres'
   port: 5432
   database: 'go-emitter'
   username: 'postgres'

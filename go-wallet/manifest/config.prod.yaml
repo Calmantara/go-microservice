@@ -2,7 +2,7 @@ service:
   name: 'go-wallet'
   grpcPort: 50050
 postgresRead:
-  host: '10.0.0.5'
+  host: 'postgres'
   port: 5432
   database: 'go-wallet'
   username: 'postgres'
@@ -17,7 +17,7 @@ postgresRead:
   # in minute
   maxIdleConnectionTtl: 5 
 postgresWrite:
-  host: '10.0.0.5'
+  host: 'postgres'
   port: 5432
   database: 'go-wallet'
   username: 'postgres'
@@ -32,7 +32,7 @@ postgresWrite:
   # in minute
   maxIdleConnectionTtl: 5 
 redis:
-  host: '10.0.0.2'
+  host: 'postgres'
   port: 6379
   password: 'redisAdmin'
   db: 1
@@ -46,7 +46,7 @@ walletConf:
 # kafka consumer workers
 kafka:
   brokers: 
-    - '10.0.0.4:29092'
+    - 'broker:29092'
 balanceTransaction:
   group: balance-transaction-group
   topic: balance-transaction

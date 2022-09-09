@@ -84,7 +84,7 @@ services:
 
 networks:
   work-vnet:
-    name: local-vnet
+    name: infra-vnet
     driver: bridge
     ipam:
       config:

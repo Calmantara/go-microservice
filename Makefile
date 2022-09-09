@@ -8,11 +8,11 @@ up:
 	echo "running docker compose"
 	docker-compose -f docker-compose.yaml up -d
 down:
+	docker-compose -f docker-compose.yaml down --rmi all
+	cd docker-infra && docker-compose -f docker-compose.yaml down
 	rm go-wallet/main-app
 	rm go-emitter/main-app
 	rm go-gateway/main-app
-	cd docker-infra && docker-compose -f docker-compose.yaml down
-	docker-compose -f docker-compose.yaml down
 topic:
 	docker exec -it broker kafka-topics --create --topic balance-transaction --bootstrap-server localhost:9092 
 	docker exec -it broker kafka-topics --create --topic balance-transaction-group-table --bootstrap-server localhost:9092

@@ -54,14 +54,13 @@ func NewPostgresConfig(sugar logger.CustomLogger, config config.ConfigSetup, ops
 	sugar.Logger().Info("Initialization Postgres Configuration. . .")
 	postgresParam := PostgresParam{Mode: "read"}
 
-	//get config
-	mode := "postgres" + postgresParam.Mode
-	config.GetConfig(mode, &postgresParam)
-
 	//iterate all option function
 	for _, v := range ops {
 		v(&postgresParam)
 	}
+	//get config
+	mode := "postgres" + postgresParam.Mode
+	config.GetConfig(mode, &postgresParam)
 
 	gormDB := openPostgresConnection(postgresParam)
 	pg := PostgresConfigImpl{
@@ -69,6 +68,7 @@ func NewPostgresConfig(sugar logger.CustomLogger, config config.ConfigSetup, ops
 		gormDB:        gormDB,
 		postgresParam: postgresParam,
 	}
+
 	sugar.Logger().Infof("database connection error %v:%v", mode, gormDB.Error)
 	return &pg
 }
